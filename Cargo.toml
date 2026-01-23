@@ -1,0 +1,11 @@
+[package]
+name = "bevy_multiplayer_project"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+members = ["client", "server"]
+
+[workspace.dependencies]
+bevy = "0.18.0"
+bevy_renet = "4.0.0"
