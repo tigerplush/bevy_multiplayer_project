@@ -6,3 +6,7 @@ edition = "2024"
 [dependencies]
 bevy = { workspace = true }
 bevy_renet = { workspace = true }
+wincode = { workspace = true }
+
+[lib]
+path = "../src/lib.rs"

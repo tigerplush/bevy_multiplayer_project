@@ -9,3 +9,8 @@ members = ["client", "server"]
 [workspace.dependencies]
 bevy = "0.18.0"
 bevy_renet = "4.0.0"
+wincode = { version ="0.4.1", features = ["derive"] }
+
+[dependencies]
+bevy_renet = { workspace = true }
+wincode = { workspace = true }
