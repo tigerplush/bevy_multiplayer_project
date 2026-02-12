@@ -11,12 +11,14 @@ pub enum ServerMessage {
 #[repr(u8)]
 pub enum ServerChannel {
     ServerMessages,
+    NetworkedEntities,
 }
 
 impl From<ServerChannel> for u8 {
     fn from(value: ServerChannel) -> Self {
         match value {
             ServerChannel::ServerMessages => 0,
+            ServerChannel::NetworkedEntities => 1,
         }
     }
 }
@@ -34,7 +36,7 @@ impl From<ClientChannel> for u8 {
     }
 }
 
-#[derive(Debug, Resource, SchemaRead, SchemaWrite)]
+#[derive(Component, Debug, Resource, SchemaRead, SchemaWrite)]
 pub struct PlayerMovementIntention {
     pub x: f32,
     pub y: f32,

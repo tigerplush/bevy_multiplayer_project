@@ -1,7 +1,4 @@
-use std::{
-    net::UdpSocket,
-    time::SystemTime,
-};
+use std::{net::UdpSocket, time::SystemTime};
 
 use bevy::prelude::*;
 use bevy_renet::{
@@ -40,12 +37,20 @@ impl Plugin for ClientPlugin {
             .insert_resource(client)
             .insert_resource(transport)
             .add_observer(on_error)
+            .add_systems(Startup, setup)
             .add_systems(Update, handle_server_messages);
     }
 }
 
 fn on_error(error: On<NetcodeErrorEvent>) {
     error!("{:?}", error);
+}
+
+fn setup(mut commands: Commands) {
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
+    ));
 }
 
 fn handle_server_messages(mut client: ResMut<RenetClient>) {

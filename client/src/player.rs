@@ -9,7 +9,7 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(InputManagerPlugin::<PlayerActions>::default())
             .insert_resource(PlayerMovementIntention::new())
-            .add_systems(Startup, spawn_player)
+            .add_systems(Startup, setup)
             .add_systems(Update, move_player)
             .add_systems(PostUpdate, send_movement);
     }
@@ -21,7 +21,7 @@ enum PlayerActions {
     Move,
 }
 
-fn spawn_player(mut commands: Commands) {
+fn setup(mut commands: Commands) {
     let input_map = InputMap::default().with_dual_axis(PlayerActions::Move, VirtualDPad::wasd());
     commands.spawn(input_map);
 }
