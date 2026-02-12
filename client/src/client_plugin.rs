@@ -13,6 +13,8 @@ use bevy_renet::{
 };
 use client::{ServerChannel, ServerMessage};
 
+use crate::player::PlayerPlugin;
+
 pub(crate) struct ClientPlugin;
 
 impl Plugin for ClientPlugin {
@@ -34,6 +36,7 @@ impl Plugin for ClientPlugin {
         app.add_plugins(DefaultPlugins)
             .add_plugins(RenetClientPlugin)
             .add_plugins(NetcodeClientPlugin)
+            .add_plugins(PlayerPlugin)
             .insert_resource(client)
             .insert_resource(transport)
             .add_observer(on_error)
