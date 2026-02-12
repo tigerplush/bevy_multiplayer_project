@@ -8,6 +8,8 @@ use bevy_renet::{
 };
 use server::{ServerChannel, ServerMessage};
 
+use crate::player::PlayerPlugin;
+
 pub(crate) struct ServerPlugin;
 
 impl Plugin for ServerPlugin {
@@ -29,20 +31,19 @@ impl Plugin for ServerPlugin {
             .add_plugins(LogPlugin::default())
             .add_plugins(RenetServerPlugin)
             .add_plugins(NetcodeServerPlugin)
+            .add_plugins(PlayerPlugin)
             .insert_resource(ActiveClients::empty())
             .insert_resource(server)
             .insert_resource(transport)
-            .add_observer(handle_server_events)
-            .add_observer(on_client_connect)
-            .add_observer(on_client_disconnect);
+            .add_observer(handle_server_events);
     }
 }
 
 #[derive(Component)]
-struct Client(ClientId);
+pub(crate) struct Client(pub ClientId);
 
 #[derive(Deref, DerefMut, Resource)]
-struct ActiveClients(HashMap<ClientId, Entity>);
+pub(crate) struct ActiveClients(HashMap<ClientId, Entity>);
 
 impl ActiveClients {
     fn empty() -> Self {
@@ -80,27 +81,7 @@ fn handle_server_events(
     }
 }
 
-fn on_client_connect(
-    add: On<Add, Client>,
-    active_clients: Res<ActiveClients>,
-    mut server: ResMut<RenetServer>,
-    query: Query<&Client>,
-) {
-    let client = query.get(add.entity).unwrap();
-    let message = wincode::serialize(&ServerMessage::ClientJoined(client.0)).unwrap();
-    for (client_id, _) in active_clients.iter() {
-        server.send_message(*client_id, ServerChannel::ServerMessages, message.clone());
-    }
-}
 
-fn on_client_disconnect(
-    remove: On<Remove, Client>,
-    active_clients: Res<ActiveClients>,
-    mut server: ResMut<RenetServer>,
-    query: Query<&Client>,
-) {
-    let client = query.get(remove.entity).unwrap();
-    let message = wincode::serialize(&ServerMessage::ClientLeft(client.0)).unwrap();
     for (client_id, _) in active_clients.iter() {
         server.send_message(*client_id, ServerChannel::ServerMessages, message.clone());
     }
