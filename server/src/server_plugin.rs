@@ -6,7 +6,7 @@ use bevy_renet::{
     netcode::{NetcodeServerPlugin, NetcodeServerTransport, ServerAuthentication, ServerConfig},
     renet::{ClientId, ConnectionConfig, ServerEvent},
 };
-use server::{ServerChannel, ServerMessage};
+use server::{ClientChannel, PlayerMovementIntention, ServerChannel, ServerMessage};
 
 use crate::player::PlayerPlugin;
 
@@ -35,6 +35,7 @@ impl Plugin for ServerPlugin {
             .insert_resource(ActiveClients::empty())
             .insert_resource(server)
             .insert_resource(transport)
+            .add_systems(Update, handle_client_messages)
             .add_observer(handle_server_events);
     }
 }
@@ -82,7 +83,10 @@ fn handle_server_events(
 }
 
 
+fn handle_client_messages(active_clients: Res<ActiveClients>, mut server: ResMut<RenetServer>) {
     for (client_id, _) in active_clients.iter() {
-        server.send_message(*client_id, ServerChannel::ServerMessages, message.clone());
+        while let Some(message) = server.receive_message(*client_id, ClientChannel::ClientInput) {
+            let movement = wincode::deserialize::<PlayerMovementIntention>(&message).unwrap();
+        }
     }
 }

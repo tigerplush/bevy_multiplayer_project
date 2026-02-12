@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+mod movement;
 mod player;
 mod server_plugin;
 
