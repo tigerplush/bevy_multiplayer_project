@@ -12,5 +12,6 @@ bevy_renet = "4.0.0"
 wincode = { version ="0.4.1", features = ["derive"] }
 
 [dependencies]
+bevy = { workspace = true }
 bevy_renet = { workspace = true }
 wincode = { workspace = true }

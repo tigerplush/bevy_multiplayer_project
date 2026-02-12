@@ -1,3 +1,4 @@
+use bevy::prelude::*;
 use bevy_renet::renet::ClientId;
 use wincode::{SchemaRead, SchemaWrite};
 
@@ -19,3 +20,31 @@ impl From<ServerChannel> for u8 {
         }
     }
 }
+
+#[repr(u8)]
+pub enum ClientChannel {
+    ClientInput,
+}
+
+impl From<ClientChannel> for u8 {
+    fn from(value: ClientChannel) -> Self {
+        match value {
+            ClientChannel::ClientInput => 0,
+        }
+    }
+}
+
+#[derive(Debug, Resource, SchemaRead, SchemaWrite)]
+pub struct PlayerMovementIntention {
+    pub x: f32,
+    pub y: f32,
+}
+
+impl PlayerMovementIntention {
+    pub const fn new() -> Self {
+        PlayerMovementIntention { x: 0.0, y: 0.0 }
+    }
+}
+
+
+
