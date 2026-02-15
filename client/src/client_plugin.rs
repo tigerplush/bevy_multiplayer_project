@@ -8,7 +8,7 @@ use bevy_renet::{
     },
     renet::ConnectionConfig,
 };
-use client::{ServerChannel, ServerMessage};
+use client::{NetworkedEntities, ServerChannel, ServerMessage};
 
 use crate::player::PlayerPlugin;
 
@@ -38,7 +38,7 @@ impl Plugin for ClientPlugin {
             .insert_resource(transport)
             .add_observer(on_error)
             .add_systems(Startup, setup)
-            .add_systems(Update, handle_server_messages);
+            .add_systems(Update, (handle_server_messages, sync_networked_entities));
     }
 }
 
@@ -64,5 +64,12 @@ fn handle_server_messages(mut client: ResMut<RenetClient>) {
                 info!("Client {} left", client_id);
             }
         }
+    }
+}
+
+fn sync_networked_entities(mut client: ResMut<RenetClient>) {
+    while let Some(message) = client.receive_message(ServerChannel::NetworkedEntities) {
+        let networked_entities = wincode::deserialize::<NetworkedEntities>(&message).unwrap();
+        info!("{:?}", networked_entities);
     }
 }

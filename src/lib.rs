@@ -48,5 +48,8 @@ impl PlayerMovementIntention {
     }
 }
 
-
-
+#[derive(Debug, Default, SchemaRead, SchemaWrite)]
+pub struct NetworkedEntities {
+    pub clients: Vec<ClientId>,
+    pub translation: Vec<[f32;3]>,
+}
