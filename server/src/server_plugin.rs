@@ -1,12 +1,12 @@
-use std::{collections::HashMap, net::UdpSocket, time::SystemTime};
+use std::{net::UdpSocket, time::SystemTime};
 
 use bevy::{log::LogPlugin, prelude::*};
 use bevy_renet::{
     RenetServer, RenetServerEvent, RenetServerPlugin,
     netcode::{NetcodeServerPlugin, NetcodeServerTransport, ServerAuthentication, ServerConfig},
-    renet::{ClientId, ConnectionConfig, ServerEvent},
+    renet::{ConnectionConfig, ServerEvent},
 };
-use server::{ClientChannel, PlayerMovementIntention, ServerChannel, ServerMessage};
+use server::{ActiveClients, Client, ClientChannel, PlayerMovementIntention, ServerChannel, ServerMessage};
 
 use crate::{movement::MovementPlugin, player::PlayerPlugin};
 
@@ -40,17 +40,7 @@ impl Plugin for ServerPlugin {
     }
 }
 
-#[derive(Component)]
-pub(crate) struct Client(pub ClientId);
 
-#[derive(Deref, DerefMut, Resource)]
-pub(crate) struct ActiveClients(HashMap<ClientId, Entity>);
-
-impl ActiveClients {
-    fn empty() -> Self {
-        ActiveClients(HashMap::new())
-    }
-}
 
 fn handle_server_events(
     server_event: On<RenetServerEvent>,
@@ -61,8 +51,8 @@ fn handle_server_events(
     match **server_event {
         // On client, spawn representation
         ServerEvent::ClientConnected { client_id } => {
-            info!("Client {} connected", client_id);
             let entity = commands.spawn(Client(client_id)).id();
+            info!("Client {} connected, was assigned {}", client_id, entity);
             // inform the new client about all already connected clients
             for (already_connected_id, _) in active_clients.iter() {
                 let message =
@@ -81,7 +71,6 @@ fn handle_server_events(
         }
     }
 }
-
 
 fn handle_client_messages(active_clients: Res<ActiveClients>, mut server: ResMut<RenetServer>, mut commands: Commands) {
     for (client_id, entity) in active_clients.iter() {

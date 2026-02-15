@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_renet::RenetServer;
 use server::*;
 
-use crate::{movement::Velocity, server_plugin::*};
+use crate::movement::Velocity;
 
 pub(crate) struct PlayerPlugin;
 
@@ -28,6 +28,7 @@ fn on_client_connect(
     commands
         .entity(add.entity)
         .insert((Transform::default(), Velocity::default()));
+    info!("{} is a new client, adding transform and velocity...", add.entity);
 }
 
 fn on_client_disconnect(

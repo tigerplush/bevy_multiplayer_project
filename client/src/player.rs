@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_renet::RenetClient;
-use client::{ClientChannel, PlayerMovementIntention};
+use client::{Client, ClientChannel, PlayerMovementIntention};
 use leafwing_input_manager::prelude::*;
 
 pub(crate) struct PlayerPlugin;
@@ -11,7 +11,8 @@ impl Plugin for PlayerPlugin {
             .insert_resource(PlayerMovementIntention::new())
             .add_systems(Startup, setup)
             .add_systems(Update, move_player)
-            .add_systems(PostUpdate, send_movement);
+            .add_systems(PostUpdate, send_movement)
+            .add_observer(on_client_connect);
     }
 }
 
@@ -38,4 +39,18 @@ fn move_player(
 fn send_movement(player_movement: Res<PlayerMovementIntention>, mut client: ResMut<RenetClient>) {
     let message = wincode::serialize(&*player_movement).unwrap();
     client.send_message(ClientChannel::ClientInput, message);
+}
+
+fn on_client_connect(
+    add: On<Add, Client>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut commands: Commands,
+) {
+    commands.entity(add.entity).insert((
+        Transform::default(),
+        Visibility::Inherited,
+        Mesh3d(meshes.add(Capsule3d::default())),
+        MeshMaterial3d(materials.add(StandardMaterial::default())),
+    ));
 }

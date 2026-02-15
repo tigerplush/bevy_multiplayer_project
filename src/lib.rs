@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use bevy::prelude::*;
 use bevy_renet::renet::ClientId;
 use wincode::{SchemaRead, SchemaWrite};
@@ -52,4 +54,16 @@ impl PlayerMovementIntention {
 pub struct NetworkedEntities {
     pub clients: Vec<ClientId>,
     pub translation: Vec<[f32;3]>,
+}
+
+#[derive(Component)]
+pub struct Client(pub ClientId);
+
+#[derive(Deref, DerefMut, Resource)]
+pub struct ActiveClients(HashMap<ClientId, Entity>);
+
+impl ActiveClients {
+    pub fn empty() -> Self {
+        ActiveClients(HashMap::new())
+    }
 }

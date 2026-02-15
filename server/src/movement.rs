@@ -1,8 +1,6 @@
 use bevy::prelude::*;
 use bevy_renet::RenetServer;
-use server::{NetworkedEntities, PlayerMovementIntention, ServerChannel};
-
-use crate::server_plugin::Client;
+use server::{Client, NetworkedEntities, PlayerMovementIntention, ServerChannel};
 
 #[derive(Component, Default)]
 pub(crate) struct Velocity(pub Vec3);
@@ -32,10 +30,10 @@ fn update_transform(time: Res<Time>, mut query: Query<(&Velocity, &mut Transform
 
 fn sync_networked_entities(mut server: ResMut<RenetServer>, query: Query<(&Client, &Transform)>) {
     let mut networked_entities = NetworkedEntities::default();
-    let message = wincode::serialize(&networked_entities).unwrap();
     for (client, transform) in &query {
         networked_entities.clients.push(client.0);
         networked_entities.translation.push(transform.translation.into());
     }
+    let message = wincode::serialize(&networked_entities).unwrap();
     server.broadcast_message(ServerChannel::NetworkedEntities, message);
 }

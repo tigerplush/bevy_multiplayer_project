@@ -8,7 +8,7 @@ use bevy_renet::{
     },
     renet::ConnectionConfig,
 };
-use client::{NetworkedEntities, ServerChannel, ServerMessage};
+use client::{ActiveClients, Client, NetworkedEntities, ServerChannel, ServerMessage};
 
 use crate::player::PlayerPlugin;
 
@@ -36,6 +36,7 @@ impl Plugin for ClientPlugin {
             .add_plugins(PlayerPlugin)
             .insert_resource(client)
             .insert_resource(transport)
+            .insert_resource(ActiveClients::empty())
             .add_observer(on_error)
             .add_systems(Startup, setup)
             .add_systems(Update, (handle_server_messages, sync_networked_entities));
@@ -53,23 +54,42 @@ fn setup(mut commands: Commands) {
     ));
 }
 
-fn handle_server_messages(mut client: ResMut<RenetClient>) {
+fn handle_server_messages(
+    mut client: ResMut<RenetClient>,
+    mut active_clients: ResMut<ActiveClients>,
+    mut commands: Commands,
+) {
     while let Some(message) = client.receive_message(ServerChannel::ServerMessages) {
         let server_message = wincode::deserialize(&message).unwrap();
         match server_message {
             ServerMessage::ClientJoined(client_id) => {
                 info!("Client {} joined", client_id);
+                let entity = commands.spawn(Client(client_id)).id();
+                active_clients.insert(client_id, entity);
             }
             ServerMessage::ClientLeft(client_id) => {
                 info!("Client {} left", client_id);
+                if let Some(entity) = active_clients.remove(&client_id) {
+                    commands.entity(entity).despawn();
+                }
             }
         }
     }
 }
 
-fn sync_networked_entities(mut client: ResMut<RenetClient>) {
+fn sync_networked_entities(
+    mut client: ResMut<RenetClient>,
+    active_clients: Res<ActiveClients>,
+    mut query: Query<&mut Transform>,
+) {
     while let Some(message) = client.receive_message(ServerChannel::NetworkedEntities) {
         let networked_entities = wincode::deserialize::<NetworkedEntities>(&message).unwrap();
-        info!("{:?}", networked_entities);
+        for (index, client_id) in networked_entities.clients.iter().enumerate() {
+            if let Some(entity) = active_clients.get(client_id) {
+                if let Ok(mut transform) = query.get_mut(*entity) {
+                    transform.translation = networked_entities.translation[index].into();
+                }
+            }
+        }
     }
 }
