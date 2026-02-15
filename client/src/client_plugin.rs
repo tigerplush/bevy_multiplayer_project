@@ -37,6 +37,7 @@ impl Plugin for ClientPlugin {
             .insert_resource(client)
             .insert_resource(transport)
             .insert_resource(ActiveClients::empty())
+            .insert_resource(Client(client_id))
             .add_observer(on_error)
             .add_systems(Startup, setup)
             .add_systems(Update, (handle_server_messages, sync_networked_entities));
@@ -48,23 +49,28 @@ fn on_error(error: On<NetcodeErrorEvent>) {
 }
 
 fn setup(mut commands: Commands) {
-    commands.spawn((
-        Camera3d::default(),
-        Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
-    ));
+
 }
 
+#[derive(Component)]
+pub(crate) struct LocalPlayer;
+
 fn handle_server_messages(
-    mut client: ResMut<RenetClient>,
+    client: Res<Client>,
+    mut renet_client: ResMut<RenetClient>,
     mut active_clients: ResMut<ActiveClients>,
     mut commands: Commands,
 ) {
-    while let Some(message) = client.receive_message(ServerChannel::ServerMessages) {
+    while let Some(message) = renet_client.receive_message(ServerChannel::ServerMessages) {
         let server_message = wincode::deserialize(&message).unwrap();
         match server_message {
             ServerMessage::ClientJoined(client_id) => {
                 info!("Client {} joined", client_id);
-                let entity = commands.spawn(Client(client_id)).id();
+                let mut new_client = commands.spawn(Client(client_id));
+                if client.0 == client_id {
+                    new_client.insert(LocalPlayer);
+                }
+                let entity = new_client.id();
                 active_clients.insert(client_id, entity);
             }
             ServerMessage::ClientLeft(client_id) => {
@@ -84,10 +90,11 @@ fn sync_networked_entities(
 ) {
     while let Some(message) = client.receive_message(ServerChannel::NetworkedEntities) {
         let networked_entities = wincode::deserialize::<NetworkedEntities>(&message).unwrap();
-        for (index, client_id) in networked_entities.clients.iter().enumerate() {
-            if let Some(entity) = active_clients.get(client_id) {
+        for update in networked_entities.iter() {
+            if let Some(entity) = active_clients.get(&update.client_id) {
                 if let Ok(mut transform) = query.get_mut(*entity) {
-                    transform.translation = networked_entities.translation[index].into();
+                    transform.translation = update.translation.into();
+                    transform.rotation = Quat::from_array(update.rotation);
                 }
             }
         }

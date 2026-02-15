@@ -3,6 +3,8 @@ use bevy_renet::RenetClient;
 use client::{Client, ClientChannel, PlayerMovementIntention};
 use leafwing_input_manager::prelude::*;
 
+use crate::client_plugin::LocalPlayer;
+
 pub(crate) struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -12,7 +14,8 @@ impl Plugin for PlayerPlugin {
             .add_systems(Startup, setup)
             .add_systems(Update, move_player)
             .add_systems(PostUpdate, send_movement)
-            .add_observer(on_client_connect);
+            .add_observer(on_client_connect)
+            .add_observer(on_local_player);
     }
 }
 
@@ -20,10 +23,14 @@ impl Plugin for PlayerPlugin {
 enum PlayerActions {
     #[actionlike(DualAxis)]
     Move,
+    #[actionlike(DualAxis)]
+    LookAround,
 }
 
 fn setup(mut commands: Commands) {
-    let input_map = InputMap::default().with_dual_axis(PlayerActions::Move, VirtualDPad::wasd());
+    let input_map = InputMap::default()
+        .with_dual_axis(PlayerActions::Move, VirtualDPad::wasd())
+        .with_dual_axis(PlayerActions::LookAround, MouseMove::default().inverted_x());
     commands.spawn(input_map);
 }
 
@@ -31,9 +38,10 @@ fn move_player(
     actions: Single<&ActionState<PlayerActions>>,
     mut player_movement: ResMut<PlayerMovementIntention>,
 ) {
-    let input = actions.clamped_axis_pair(&PlayerActions::Move);
-    player_movement.x = input.x;
-    player_movement.y = input.y;
+    let translation = actions.clamped_axis_pair(&PlayerActions::Move);
+    let rotation = actions.clamped_axis_pair(&PlayerActions::LookAround);
+    player_movement.translation = translation.into();
+    player_movement.rotation = rotation.into();
 }
 
 fn send_movement(player_movement: Res<PlayerMovementIntention>, mut client: ResMut<RenetClient>) {
@@ -53,4 +61,11 @@ fn on_client_connect(
         Mesh3d(meshes.add(Capsule3d::default())),
         MeshMaterial3d(materials.add(StandardMaterial::default())),
     ));
+}
+
+fn on_local_player(add: On<Add, LocalPlayer>, mut commands: Commands) {
+    commands.entity(add.entity).insert(children![(
+        Camera3d::default(),
+        Transform::from_xyz(0.0, 1.0, 0.0)
+    )]);
 }
